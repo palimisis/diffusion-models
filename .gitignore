@@ -2,3 +2,6 @@ datasets
 *.pt
 *.gif
 wandb
+.DS_Store
+.ipynb_checkpoints
+```
