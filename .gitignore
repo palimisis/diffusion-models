@@ -9,3 +9,4 @@ __pycache__
 results
 noise.ipynb
 run.sh
+score/

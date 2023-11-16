@@ -511,13 +511,15 @@ class UNet(nn.Module):
         channels=3,
         self_condition=False,
         resnet_block_groups=4,
+        num_classes=10,
+        class_emb_size=4,
     ):
         super().__init__()
 
         # determine dimensions
         self.channels = channels
         self.self_condition = self_condition
-        input_channels = channels * (2 if self_condition else 1)
+        input_channels = channels + class_emb_size if self_condition else channels
 
         init_dim = default(init_dim, dim)
         self.init_conv = nn.Conv2d(
@@ -538,6 +540,10 @@ class UNet(nn.Module):
             nn.GELU(),
             nn.Linear(time_dim, time_dim),
         )
+
+        if self_condition:
+            self.class_emb_size = class_emb_size
+            self.class_emb = nn.Embedding(num_classes, self.class_emb_size)
 
         # layers
         self.downs = nn.ModuleList([])
@@ -587,9 +593,14 @@ class UNet(nn.Module):
         self.final_conv = nn.Conv2d(dim, self.out_dim, 1)
 
     def forward(self, x, time, x_self_cond=None):
+        b, ch, w, h = x.shape
+
         if self.self_condition:
-            x_self_cond = default(x_self_cond, lambda: torch.zeros_like(x))
-            x = torch.cat((x_self_cond, x), dim=1)
+            class_cond = self.class_emb(x_self_cond)
+            class_cond = class_cond.view(b, class_cond.shape[1], 1, 1).expand(
+                b, class_cond.shape[1], w, h
+            )
+            x = torch.cat((x, class_cond), 1)  # (b, channels*2, H, W)
 
         x = self.init_conv(x)
         r = x.clone()

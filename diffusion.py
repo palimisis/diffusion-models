@@ -23,6 +23,7 @@ class Diffusion:
         device="cuda",
         schedule="linear",
         channels=3,
+        n_classes=10,
     ):
         self.noise_steps = noise_steps
         self.beta_start = beta_start
@@ -31,6 +32,7 @@ class Diffusion:
         self.device = device
         self.schedule = schedule
         self.channels = channels
+        self.n_classes = n_classes
 
         self.beta = self.prepare_noise_schedule().to(device)
         self.alpha = 1 - self.beta
@@ -67,16 +69,23 @@ class Diffusion:
     def sample_timesteps(self, n):
         return torch.randint(low=1, high=self.noise_steps, size=(n,))
 
-    def sample(self, model, n):
+    def sample(self, model, samples_per_class=8):
+        n = self.n_classes * samples_per_class
         logging.info(f"Sampling {n} new images....")
         model.eval()
         with torch.no_grad():
             x = torch.randn((n, self.channels, self.img_size, self.img_size)).to(
                 self.device
             )
-            for i in tqdm(reversed(range(1, self.noise_steps)), position=0):
+            y = (
+                torch.tensor([[i] * samples_per_class for i in range(self.n_classes)])
+                .flatten()
+                .to(self.device)
+            )
+            for i in tqdm(reversed(range(1, 2)), position=0):
                 t = (torch.ones(n) * i).long().to(self.device)
-                predicted_noise = model(x, t)
+                predicted_noise = model(x, t, x_self_cond=y)
+
                 alpha = self.alpha[t][:, None, None, None]
                 alpha_bar = self.alpha_bar[t][:, None, None, None]
                 beta = self.beta[t][:, None, None, None]
