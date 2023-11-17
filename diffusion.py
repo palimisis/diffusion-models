@@ -82,7 +82,7 @@ class Diffusion:
                 .flatten()
                 .to(self.device)
             )
-            for i in tqdm(reversed(range(1, 2)), position=0):
+            for i in tqdm(reversed(range(1, self.noise_steps))):
                 t = (torch.ones(n) * i).long().to(self.device)
                 predicted_noise = model(x, t, x_self_cond=y)
 

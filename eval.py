@@ -1,8 +1,6 @@
 """
 Calculate FID score for a given diffusion model.
 """
-import os
-import subprocess
 
 import torch
 import torchvision.transforms as T
@@ -11,13 +9,16 @@ from torchmetrics.image.fid import FrechetInceptionDistance
 from diffusion import Diffusion
 from unet import UNet
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+# device = "cuda" if torch.cuda.is_available() else "cpu"
 
 
-def evaluate(diffusion: Diffusion, model, dataset, n_classes):
+def evaluate(diffusion: Diffusion, model, dataset, n_classes, device):
+    device="cpu"
     # Generate samples
     samples_per_class = 10
-    sample_images = diffusion.sample(model, samples_per_class=samples_per_class)
+    sample_images = diffusion.sample(model, samples_per_class=samples_per_class).to(
+        device
+    )
 
     # For each class in the dataset, calculate FID
     # TODO: Optimize this
@@ -31,27 +32,26 @@ def evaluate(diffusion: Diffusion, model, dataset, n_classes):
                 images = images[:samples_per_class]
                 break
 
-        real_images = torch.stack(images)
+        real_images = torch.stack(images).to(device)
 
         fid = FrechetInceptionDistance(normalize=True)
-        fid.update(real_images, real=True)
-        fid.update(
-            sample_images[
+        fid.update(real_images.to(device), real=True)
+        fid.update(sample_images[
                 i * samples_per_class : i * samples_per_class + samples_per_class
-            ],
+            ].to(device),
             real=False,
         )
         print(f"Class {i} FID: {float(fid.compute())}")
 
 
-def eval(args, training_dataset, n_classes):
+def eval(args, training_dataset, n_classes, cpt_path, device):
     model = UNet(
         dim=args.image_size,
         channels=args.channels,
         self_condition=args.class_condition,
         num_classes=n_classes,
     ).to(device)
-    model.load_state_dict(torch.load(args.cpt_path))
+    model.load_state_dict(torch.load(cpt_path)["model_state_dict"])
     print(sum(p.numel() for p in model.parameters()))
     diffusion = Diffusion(
         img_size=args.image_size,
@@ -60,7 +60,7 @@ def eval(args, training_dataset, n_classes):
         n_classes=n_classes,
     )
 
-    evaluate(diffusion, model, training_dataset, n_classes)
+    evaluate(diffusion, model, training_dataset, n_classes, device)
 
 
 def main():
