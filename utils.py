@@ -1,4 +1,5 @@
 import os
+from custom_datasets.sixray import SixRayDataSet
 
 import torch
 import torchvision
@@ -36,7 +37,7 @@ def save_images(images, path, **kwargs):
 def get_data(args):
     transforms = torchvision.transforms.Compose(
         [
-            torchvision.transforms.Resize(args.image_size),
+            torchvision.transforms.Resize((args.image_size, args.image_size)),
             torchvision.transforms.RandomHorizontalFlip(),
             torchvision.transforms.ToTensor(),
             torchvision.transforms.Lambda(
@@ -77,6 +78,17 @@ def get_data(args):
             root="./datasets/100Sports/valid", transform=transforms
         )
         n_classes = 100
+    elif args.dataset == "sixray":
+        training_dataset = SixRayDataSet(            
+            root=args.dataset_path, transform=transforms
+        )
+        validation_dataset = SixRayDataSet(            
+            root=args.dataset_path, transform=transforms
+        )
+        n_classes = 6
+        return training_dataset, validation_dataset, n_classes
+
+    print(len(training_dataset))
 
     training_dataloader = DataLoader(
         training_dataset, batch_size=args.batch_size, shuffle=True

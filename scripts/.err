@@ -1,0 +1,25 @@
+Traceback (most recent call last):
+  File "/home/it21902/diffusion-models/train.py", line 190, in <module>
+    launch()
+  File "/home/it21902/diffusion-models/train.py", line 186, in launch
+    train(args)
+  File "/home/it21902/diffusion-models/train.py", line 70, in train
+    ).to(device)
+      ^^^^^^^^^^
+  File "/home/it21902/miniconda3/envs/pt/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1145, in to
+    return self._apply(convert)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/home/it21902/miniconda3/envs/pt/lib/python3.11/site-packages/torch/nn/modules/module.py", line 797, in _apply
+    module._apply(fn)
+  File "/home/it21902/miniconda3/envs/pt/lib/python3.11/site-packages/torch/nn/modules/module.py", line 797, in _apply
+    module._apply(fn)
+  File "/home/it21902/miniconda3/envs/pt/lib/python3.11/site-packages/torch/nn/modules/module.py", line 797, in _apply
+    module._apply(fn)
+  [Previous line repeated 1 more time]
+  File "/home/it21902/miniconda3/envs/pt/lib/python3.11/site-packages/torch/nn/modules/module.py", line 820, in _apply
+    param_applied = fn(param)
+                    ^^^^^^^^^
+  File "/home/it21902/miniconda3/envs/pt/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1143, in convert
+    return t.to(device, dtype if t.is_floating_point() or t.is_complex() else None, non_blocking)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 24.00 MiB (GPU 0; 23.68 GiB total capacity; 23.02 GiB already allocated; 4.12 MiB free; 23.04 GiB reserved in total by PyTorch) If reserved memory is >> allocated memory try setting max_split_size_mb to avoid fragmentation.  See documentation for Memory Management and PYTORCH_CUDA_ALLOC_CONF

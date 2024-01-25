@@ -13,7 +13,8 @@ from unet import UNet
 from utils import get_data, local_setup, save_images
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
-
+available_gpus = [torch.cuda.device(i) for i in range(torch.cuda.device_count())]
+print(available_gpus)
 
 def save_model_checkpoint(model, epoch, optimizer, path: Path, loss):
     torch.save(
@@ -54,9 +55,15 @@ def valid_step(model, diffusion, loss_fn, images, labels):
 
 def train(args):
     local_setup(args.run_name)
-    wandb.init(project="diffusion_models", config=args)
+    # wandb.init(project="diffusion_models", config=args)
 
-    training_dataloader, validation_dataloader, n_classes = get_data(args)
+    # training_dataloader, validation_dataloader, n_classes = get_data(args)
+    training_dataset, validation_dataset, n_classes = get_data(args)
+
+    for i in range(5):
+        print(training_dataset[i].shape)
+    return
+
     # model = UNet(c_in=args.channels, c_out=args.channels, device=device).to(device)
     # model = UNet().to(device)
     print(args.class_condition)
@@ -110,17 +117,17 @@ def train(args):
             # if i == l - 1:
             #     break
 
-        wandb.log({"loss": loss.item()}, step=epoch + 1)
+        # wandb.log({"loss": loss.item()}, step=epoch + 1)
 
         pbar = tqdm(validation_dataloader)
         # Validation
-        model.eval()
-        for i, (images, labels) in enumerate(pbar):
-            vall_loss = valid_step(model, diffusion, mse, images, labels)
-            pbar.set_postfix(MSE=vall_loss.item())
-            # if i == l - 1:
-            #     break
-        wandb.log({"val_loss": vall_loss.item()}, step=epoch + 1)
+        # model.eval()
+        # for i, (images, labels) in enumerate(pbar):
+        #     vall_loss = valid_step(model, diffusion, mse, images, labels)
+        #     pbar.set_postfix(MSE=vall_loss.item())
+        #     # if i == l - 1:
+        #     #     break
+        # wandb.log({"val_loss": vall_loss.item()}, step=epoch + 1)
 
         current_epoch += 1 
 
@@ -131,11 +138,11 @@ def train(args):
         )
 
         # Log images to wandb
-        if (epoch + 1) % 5 == 0:
-            wandb.log(
-                {f"epoch_{current_epoch+1}_samples": [wandb.Image(i) for i in sampled_images]},
-                step=current_epoch + 1,
-            )
+        # if (epoch + 1) % 5 == 0:
+        #     wandb.log(
+        #         {f"epoch_{current_epoch+1}_samples": [wandb.Image(i) for i in sampled_images]},
+        #         step=current_epoch + 1,
+        #     )
 
         save_model_checkpoint(
             model,
@@ -152,9 +159,9 @@ def train(args):
 
     # args.cpt_path = os.path.join(f"models", args.run_name, f"ckpt_epoch{epoch}.pt")
     chk = os.path.join(chk_path, "checkpoint.chk")
-    eval(args, training_dataset=training_dataloader, n_classes=n_classes, cpt_path=chk, device=device)
+    # eval(args, training_dataset=training_dataloader, n_classes=n_classes, cpt_path=chk, device=device)
 
-    wandb.finish()
+    # wandb.finish()
 
 
 def launch():
@@ -166,6 +173,7 @@ def launch():
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--image_size", type=int, default=32)
     parser.add_argument("--channels", type=int, default=1)
+    parser.add_argument("--dataset_path", type=str)
     parser.add_argument("--dataset", type=str, default="mnist")
     parser.add_argument(
         "--class_condition", action=argparse.BooleanOptionalAction, default=False
