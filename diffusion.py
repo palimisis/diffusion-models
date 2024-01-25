@@ -84,7 +84,7 @@ class Diffusion:
             )
             for i in tqdm(reversed(range(1, self.noise_steps))):
                 t = (torch.ones(n) * i).long().to(self.device)
-                predicted_noise = model(x, t, x_self_cond=y)
+                predicted_noise = model(x, t)
 
                 alpha = self.alpha[t][:, None, None, None]
                 alpha_bar = self.alpha_bar[t][:, None, None, None]

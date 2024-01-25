@@ -11,6 +11,7 @@ from diffusion import Diffusion
 from eval import eval
 from unet import UNet
 from utils import get_data, local_setup, save_images
+import numpy as np
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 available_gpus = [torch.cuda.device(i) for i in range(torch.cuda.device_count())]
@@ -28,9 +29,9 @@ def save_model_checkpoint(model, epoch, optimizer, path: Path, loss):
     )
 
 
-def train_step(model, diffusion, optimizer, loss_fn, images, labels):
+def train_step(model, diffusion, optimizer, loss_fn, images, labels=None):
     images = images.to(device)
-    labels = labels.to(device)
+    if labels: labels = labels.to(device)
     t = diffusion.sample_timesteps(images.shape[0]).to(device)
     x_t, noise = diffusion.add_noise(images, t)
     predicted_noise = model(x_t, t, x_self_cond=labels)
@@ -52,6 +53,16 @@ def valid_step(model, diffusion, loss_fn, images, labels):
     loss = loss_fn(noise, predicted_noise)
     return loss
 
+nth_batch = 0
+def get_batch(data, batch_size=4):
+    global nth_batch
+    nth_batch += 1
+
+    batch = np.zeros((batch_size, 3, 1024, 1024))
+    for i in range(batch_size):
+        batch[i] = data[i*nth_batch]
+    return batch
+
 
 def train(args):
     local_setup(args.run_name)
@@ -60,13 +71,10 @@ def train(args):
     # training_dataloader, validation_dataloader, n_classes = get_data(args)
     training_dataset, validation_dataset, n_classes = get_data(args)
 
-    for i in range(5):
-        print(training_dataset[i].shape)
-    return
 
     # model = UNet(c_in=args.channels, c_out=args.channels, device=device).to(device)
     # model = UNet().to(device)
-    print(args.class_condition)
+    # print(args.class_condition)
     model = UNet(
         dim=args.image_size,
         channels=args.channels,
@@ -86,7 +94,7 @@ def train(args):
         channels=args.channels,
         n_classes=n_classes,
     )
-    l = len(training_dataloader)
+    # l = len(training_dataloader)
     # l = 1
 
     chk_path = Path(args.cpt_path)
@@ -108,18 +116,20 @@ def train(args):
     for epoch in range(1, args.epochs + 1):
         # for epoch in range(args.epochs):
         # pbar = tqdm(training_dataloader, total=1)
-        pbar = tqdm(training_dataloader)
+        # pbar = tqdm(training_dataloader)
+        pbar = tqdm(training_dataset)
         # Training 1 epoch
         model.train()
-        for i, (images, labels) in enumerate(pbar):
-            loss = train_step(model, diffusion, optimizer, mse, images, labels)
+        for i, images in enumerate(pbar):
+            # print(i)
+            loss = train_step(model, diffusion, optimizer, mse, images)
             pbar.set_postfix(MSE=loss.item())
             # if i == l - 1:
             #     break
-
+    
         # wandb.log({"loss": loss.item()}, step=epoch + 1)
 
-        pbar = tqdm(validation_dataloader)
+        # pbar = tqdm(validation_dataloader)
         # Validation
         # model.eval()
         # for i, (images, labels) in enumerate(pbar):
@@ -172,7 +182,7 @@ def launch():
     parser.add_argument("--epochs", type=int, default=5)
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--image_size", type=int, default=32)
-    parser.add_argument("--channels", type=int, default=1)
+    parser.add_argument("--channels", type=int, default=3)
     parser.add_argument("--dataset_path", type=str)
     parser.add_argument("--dataset", type=str, default="mnist")
     parser.add_argument(
