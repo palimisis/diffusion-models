@@ -70,17 +70,12 @@ class Diffusion:
         return torch.randint(low=1, high=self.noise_steps, size=(n,))
 
     def sample(self, model, samples_per_class=8):
-        n = self.n_classes * samples_per_class
+        n = self.n_classes * samples_per_class if self.n_classes else 24
         logging.info(f"Sampling {n} new images....")
         model.eval()
         with torch.no_grad():
             x = torch.randn((n, self.channels, self.img_size, self.img_size)).to(
                 self.device
-            )
-            y = (
-                torch.tensor([[i] * samples_per_class for i in range(self.n_classes)])
-                .flatten()
-                .to(self.device)
             )
             for i in tqdm(reversed(range(1, self.noise_steps))):
                 t = (torch.ones(n) * i).long().to(self.device)

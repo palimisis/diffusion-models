@@ -9,6 +9,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.datasets import CIFAR10
 from torchvision.datasets.mnist import MNIST, FashionMNIST
+from torch.utils.data.distributed import DistributedSampler
 
 
 def plot_images(images):
@@ -91,10 +92,12 @@ def get_data(args):
     print(len(training_dataset))
 
     training_dataloader = DataLoader(
-        training_dataset, batch_size=args.batch_size, shuffle=True
+        training_dataset, batch_size=args.batch_size, shuffle=False,
+        sampler=DistributedSampler(training_dataset)
     )
     validation_dataloader = DataLoader(
-        validation_dataset, batch_size=args.batch_size, shuffle=True
+        validation_dataset, batch_size=args.batch_size, shuffle=False,
+        sampler=DistributedSampler(training_dataset)
     )
     return training_dataloader, validation_dataloader, n_classes
 

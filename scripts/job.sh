@@ -1,7 +1,7 @@
 #!/bin/bash 
-#SBATCH --partition=leia
+#SBATCH --partition=yoda
 #SBATCH --ntasks 1
-#SBATCH --gres=gpu:2
+#SBATCH --gres=gpu:1
 #SBATCH --time=03:00:00
 
 set -e
@@ -13,3 +13,4 @@ conda activate pt
 
 
 python3 /home/it21902/diffusion-models/train.py $@
+# python3 /home/it21902/diffusion-models/distributed_example.py $@
